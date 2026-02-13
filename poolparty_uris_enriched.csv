@@ -422,8 +422,8 @@ Source: https://www.zotero.org/groups/4678659/items/DP3I4H4G
 Reference: <i>WNT</i>, n.d.
 WNT: M072982
 Classified by: definition"
-activity,https://digitaalerfgoed.poolparty.biz/globalise/8130bce4-7f24-4c65-9b60-30e798036647,,
-activity,https://digitaalerfgoed.poolparty.biz/globalise/8130bce4-7f24-4c65-9b60-30e798036648,,
+activity,https://digitaalerfgoed.poolparty.biz/globalise/8130bce4-7f24-4c65-9b60-30e798036647,NO URI,
+activity,https://digitaalerfgoed.poolparty.biz/globalise/8130bce4-7f24-4c65-9b60-30e798036648,NO URI,
 activity,https://digitaalerfgoed.poolparty.biz/globalise/81cdd4de-8ae1-4920-910b-a16fa02a70d7,baas der houttuinen,"[comp.]
 
 Beheerder of leidinggevende van de houttuin, een ""omheinde bewaarplaats voor hout"".
@@ -488,7 +488,7 @@ Source: https://www.zotero.org/groups/4678659/items/DP3I4H4G
 Reference: <i>WNT</i>, n.d.
 WNT: M012790
 Classified by: definition"
-activity,https://digitaalerfgoed.poolparty.biz/globalise/9818e686-ec0b-4288-ab89-1d6d4057add6,,
+activity,https://digitaalerfgoed.poolparty.biz/globalise/9818e686-ec0b-4288-ab89-1d6d4057add6,NO URI,
 activity,https://digitaalerfgoed.poolparty.biz/globalise/98815532-3228-4bd4-881f-f60135307591,koperslager,"[GLOBALISE translation] Craftsman who makes objects of hammered copper.
 
 Cited from:
@@ -834,7 +834,7 @@ Source: https://www.zotero.org/groups/4678659/items/DP3I4H4G
 Reference: <i>WNT</i>, n.d.
 WNT: M087790
 Classified by: definition"
-activity,https://digitaalerfgoed.poolparty.biz/globalise/f87ed384-7c23-474a-988b-8fc6f4264ff3,,
+activity,https://digitaalerfgoed.poolparty.biz/globalise/f87ed384-7c23-474a-988b-8fc6f4264ff3,NO URI,
 activity,https://digitaalerfgoed.poolparty.biz/globalise/f8f017f6-94aa-4e6d-be36-2276959d43ed,baas der wapenkamer,"[comp.]
 
 Beheerder of leidinggevende van de wapenkamer, een arsenaal of plek waar wapens worden bewaard.
@@ -847,7 +847,7 @@ Geclassificeerd op: definitie"
 activity,https://digitaalerfgoed.poolparty.biz/globalise/fbeae263-15c8-4847-a226-2c6e085e7ea8,Metselaar,Bricklayer [Globalise Definition]
 activity,https://digitaalerfgoed.poolparty.biz/globalise/fd2f20a7-7793-4c80-aea2-d5f6cacfffd9,Voormalig werknemer,
 activity,https://digitaalerfgoed.poolparty.biz/globalise/ff56c718-cfee-4c2c-afdd-ebb691bbc572,meesterknecht der metselaars,https://www.zotero.org/groups/4678659/items/AWD4CT6L
-activityType,https://digitaalerfgoed.poolparty.biz/globalise/225cef07-5b8e-4a8b-a141-2471a0cffce8,,
+activityType,https://digitaalerfgoed.poolparty.biz/globalise/225cef07-5b8e-4a8b-a141-2471a0cffce8,NO URI,
 activityType,https://digitaalerfgoed.poolparty.biz/globalise/b02a06d5-9003-4521-8021-24e451d49948,metadatafunctie,applied to the naamboekjes metadatafunction column
 activityType,https://digitaalerfgoed.poolparty.biz/globalise/d4e41e03-63a4-4673-b711-a699624f5a04,functiegroep,applied to the functiongroup column in the naamboekjes dataset
 identity,https://digitaalerfgoed.poolparty.biz/globalise/55baeba7-b3ec-4d2c-8488-df35aa1cbf18,Toepas,"The Topasses of southern India, Ceylon and Timor [...] were often of purely ‘Asian’ descent but baptized and Lusified to a certain extent. They were closely associated with the Portuguese by the Dutch and in fact often included in the term ‘Portuguese’.
@@ -929,4 +929,4 @@ The definition’s sources have the geographical scope of United Kingdom, South 
 identityType,https://digitaalerfgoed.poolparty.biz/globalise/bfd9751f-b665-48bc-99e6-6a9b89e22e85,assigned gender,Used for the 'female' gender in the VOC opvarenden cases where the VOC identified one of their male-performing employees the female gender.
 locationRelation,https://digitaalerfgoed.poolparty.biz/globalise/8439514a-64bf-4f0b-8f7a-e8ac515d17df,place of origin,applied to the 'Herkomst' column of resilient diversity (https://www.zotero.org/groups/4678659/items/DRGA8PZF)
 locationRelation,https://digitaalerfgoed.poolparty.biz/globalise/f7708a18-d120-486f-a366-a7273214e0db,woonplaats,applied to the 'Woonplaats' column of resilient diversity (https://www.zotero.org/groups/4678659/items/DRGA8PZF)
-relation,https://d-nb.info/standards/elementset/agrelon#hasspouse,,
+relation,https://d-nb.info/standards/elementset/agrelon#hasspouse,has spouse,This person was married to the other person.
