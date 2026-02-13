@@ -13,6 +13,7 @@ if 'selected_person_data' not in st.session_state:
 person = st.session_state['selected_person_data']
 pid = st.session_state['selected_person_id']
 enrichment_data = st.session_state.get('enrichment_data', {'locations': {}, 'poolparty': {}})
+all_data = st.session_state.get('all_data', {})
 
 def get_enriched_label(uri, fallback=''):
     """Get enriched label for a URI"""
@@ -46,6 +47,46 @@ def get_location_coords(uri):
             return (lat, lng)
     return None
 
+def get_primary_name(person_data):
+    """Get the primary name/appellation for a person"""
+    appellations = person_data.get('appellations', [])
+    if appellations:
+        return appellations[0].get('appellation', 'Unknown')
+    return 'Unknown'
+
+def get_event_label(event_uri, original_label):
+    """Get enriched label for an event URI"""
+    # Check for special event mappings first
+    if event_uri in enrichment_data.get('event_labels', {}):
+        return enrichment_data['event_labels'][event_uri]
+    
+    # Otherwise use the enriched label system
+    return get_enriched_label(event_uri, original_label)
+
+def get_better_source(source_string):
+    """Get a better citation for Zotero sources"""
+    if not source_string:
+        return source_string
+    
+    # Check if this is a Zotero URI
+    zotero_data = enrichment_data.get('zotero', {})
+    
+    # Try exact match first
+    if source_string in zotero_data:
+        return zotero_data[source_string]
+    
+    # Try lowercase match
+    if source_string.lower() in zotero_data:
+        return zotero_data[source_string.lower()]
+    
+    # Check if source contains a Zotero URI
+    if 'zotero.org' in source_string.lower():
+        for zot_uri, citation in zotero_data.items():
+            if zot_uri.lower() in source_string.lower():
+                return citation
+    
+    return source_string
+
 # Get primary name
 primary_name = "Unknown"
 if person.get('appellations'):
@@ -58,13 +99,14 @@ if st.button("⬅️ Back to Search"):
     st.switch_page("Search.py")
 
 # --- Tabbed Details View ---
-t0, t1, t2, t3, t4, t5, t6 = st.tabs([
+t0, t1, t2, t3, t4, t5, t6, t7 = st.tabs([
     "📅 Timeline",
     "💼 Activities", 
     "🌍 Locations", 
     "📅 Events", 
     "👤 Appellations",
     "🆔 Identities",
+    "👥 Relations",
     "🔗 References"
 ])
 
@@ -273,7 +315,8 @@ with t0:
             # Get primary event
             if obs['events']:
                 event_label = obs['events'][0].get('original_label', '')
-                enriched = get_enriched_label(obs['events'][0].get('event', ''), event_label)
+                event_uri = obs['events'][0].get('event', '')
+                enriched = get_event_label(event_uri, event_label)
                 summary_parts.append(f"⚡ {enriched}")
             
             summary = " • ".join(summary_parts) if summary_parts else "No data"
@@ -284,10 +327,12 @@ with t0:
                 col1, col2 = st.columns(2)
                 with col1:
                     st.caption("📚 **Source**")
-                    st.caption(obs['source'])
+                    better_source = get_better_source(obs['source'])
+                    st.caption(better_source)
                 with col2:
                     st.caption("🔗 **Reconstruction**")
-                    st.caption(obs['reconstruction_source'])
+                    better_recon = get_better_source(obs['reconstruction_source'])
+                    st.caption(better_recon)
                 
                 st.markdown("---")
                 
@@ -356,7 +401,8 @@ with t0:
                     st.markdown("**⚡ Events**")
                     for event in obs['events']:
                         original_label = event.get('original_label', 'Unknown Event')
-                        enriched_label = get_enriched_label(event.get('event', ''), original_label)
+                        event_uri = event.get('event', '')
+                        enriched_label = get_event_label(event_uri, original_label)
                         
                         location_uri = event.get('location', '')
                         original_location = event.get('original_location_description', '')
@@ -398,7 +444,7 @@ with t1:
                 'Start Date': act.get('startDate', 'N/A'),
                 'End Date': act.get('endDate', 'N/A'),
                 'Annotation Date': act.get('annotationDate', 'N/A'),
-                'Source': act.get('observation_source', 'N/A')
+                'Source': get_better_source(act.get('observation_source', 'N/A'))
             })
         
         df = pd.DataFrame(activity_data)
@@ -491,6 +537,9 @@ with t2:
         if map_data:
             st.subheader("📍 Location Map")
             map_df = pd.DataFrame(map_data)
+            map_df["lat"] = pd.to_numeric(map_df["lat"], errors="coerce")
+            map_df["lon"] = pd.to_numeric(map_df["lon"], errors="coerce")
+
             st.map(map_df, latitude='lat', longitude='lon')
         
         # Show detailed view
@@ -515,17 +564,21 @@ with t3:
             original_location = event.get('original_location_description', 'Unknown')
             
             # Get enriched labels
-            enriched_event = get_enriched_label(event_uri, original_label)
+            enriched_event = get_event_label(event_uri, original_label)
             enriched_location = get_enriched_label(location_uri, '')
             if not enriched_location and original_location:
                 enriched_location = get_enriched_label(original_location.upper(), enrichment_data, original_location)
             
+            # Get better source citation
+            source = event.get('observation_source', 'N/A')
+            better_source = get_better_source(source)
+            
             event_data.append({
-                'Event': enriched_event if enriched_event != original_label else original_label,
+                'Event': enriched_event,
                 'Original Location': original_location,
                 'Standardized Location': enriched_location if enriched_location and enriched_location != original_location else '—',
                 'Date': event.get('startDate', 'Unknown date'),
-                'Source': event.get('observation_source', 'N/A')
+                'Source': better_source
             })
         
         df = pd.DataFrame(event_data)
@@ -558,7 +611,7 @@ with t4:
                 'Name': name,
                 'Type': enriched_type,
                 'Annotation Date': date,
-                'Source': app.get('observation_source', 'N/A')
+                'Source': get_better_source(app.get('observation_source', 'N/A'))
             })
         
         df = pd.DataFrame(appellation_data)
@@ -632,6 +685,87 @@ with t5:
         st.info("No identity information recorded.")
 
 with t6:
+    st.subheader("Personal Relations")
+    relations = person.get('relations', [])
+    
+    if relations:
+        st.write(f"Found {len(relations)} relationship(s)")
+        
+        # Create relation data with enrichment
+        relation_data = []
+        
+        for rel in relations:
+            relation_type_uri = rel.get('relation', '')
+            other_person_uri = rel.get('otherPerson', '')
+            
+            # Get enriched relation type
+            enriched_relation = get_enriched_label(relation_type_uri, rel.get('original_label', 'N/A'))
+            
+            # Find the other person in the dataset
+            # The otherPerson URI is a cluster ID in the dataset
+            other_person_name = "Unknown"
+            other_person_id = None
+            
+            if other_person_uri and other_person_uri in all_data:
+                # Direct match - the URI is a cluster ID
+                other_person_id = other_person_uri
+                other_person_data = all_data[other_person_uri]
+                other_person_name = get_primary_name(other_person_data)
+            
+            relation_data.append({
+                'Relation Type': enriched_relation,
+                'Related Person': other_person_name,
+                'Cluster ID': other_person_id if other_person_id else 'Not found',
+                'Date': rel.get('annotationDate', 'N/A'),
+                'Source': get_better_source(rel.get('observation_source', 'N/A')),
+                'other_person_uri': other_person_uri,
+                'other_person_id': other_person_id
+            })
+        
+        # Display relations as cards with clickable links
+        for i, rel_info in enumerate(relation_data):
+            with st.container():
+                col1, col2, col3 = st.columns([2, 2, 1])
+                
+                with col1:
+                    st.markdown(f"**{rel_info['Relation Type']}**")
+                    st.caption(f"Date: {rel_info['Date']}")
+                
+                with col2:
+                    st.markdown(f"**👤 {rel_info['Related Person']}**")
+                    if rel_info['Cluster ID'] != 'Not found':
+                        st.caption(f"Cluster: {rel_info['Cluster ID']}")
+                    else:
+                        st.caption(f"⚠️ Person not found in dataset")
+                
+                with col3:
+                    # Add button to view the related person
+                    if rel_info['other_person_id'] and rel_info['other_person_id'] in all_data:
+                        if st.button(f"View →", key=f"view_relation_{i}"):
+                            # Update session state to view the related person
+                            st.session_state['selected_person_id'] = rel_info['other_person_id']
+                            st.session_state['selected_person_data'] = all_data[rel_info['other_person_id']]
+                            st.rerun()
+                    else:
+                        st.caption("Not available")
+                
+                # Show source in expander
+                with st.expander("ℹ️ Details"):
+                    st.write(f"**Source:** {rel_info['Source']}")
+                    st.write(f"**Other Person URI:** {rel_info['other_person_uri']}")
+                    if rel_info['Cluster ID'] == 'Not found':
+                        st.warning("This person's cluster ID could not be found in the dataset. The person may have been filtered out or excluded from the current data export.")
+                
+                if i < len(relation_data) - 1:
+                    st.divider()
+        
+        # Show raw data
+        with st.expander("🔍 View Raw Relations Data"):
+            st.json(relations)
+    else:
+        st.info("No relations recorded.")
+
+with t7:
     st.subheader("External References")
     refs = person.get('externalReferences', [])
     

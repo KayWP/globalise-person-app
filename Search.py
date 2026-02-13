@@ -10,8 +10,13 @@ def load_enrichment_data():
     """Load the enrichment CSV files with proper encoding handling"""
     enrichment = {
         'locations': {},
-        'poolparty': {}
+        'poolparty': {},
+        'zotero': {},
+        'event_labels': {}
     }
+    
+    # Special event URI mappings
+    enrichment['event_labels']['https://github.com/globalise-huygens/nlp-event-detection/wiki#beingdead'] = 'Deceased'
     
     # Load location URIs with encoding fallback
     if os.path.exists('location_uris_enriched.csv'):
@@ -54,6 +59,26 @@ def load_enrichment_data():
                     'label': row['dutch_prefLabel'] if pd.notna(row['dutch_prefLabel']) else None,
                     'definition': row['definition'] if pd.notna(row['definition']) else None
                 }
+    
+    # Load Zotero citations with encoding fallback
+    if os.path.exists('zotero_uris.csv'):
+        try:
+            # Try UTF-8 first
+            zot_df = pd.read_csv('zotero_uris.csv', encoding='utf-8')
+        except UnicodeDecodeError:
+            try:
+                # Try Windows-1252
+                zot_df = pd.read_csv('zotero_uris.csv', encoding='windows-1252')
+            except UnicodeDecodeError:
+                # Try ISO-8859-1
+                zot_df = pd.read_csv('zotero_uris.csv', encoding='iso-8859-1')
+        
+        for _, row in zot_df.iterrows():
+            if pd.notna(row['zotero_uri']):
+                # Store both lowercase and original case versions for matching
+                uri_lower = row['zotero_uri'].lower()
+                enrichment['zotero'][uri_lower] = row['source_reference'] if pd.notna(row['source_reference']) else row['zotero_uri']
+                enrichment['zotero'][row['zotero_uri']] = row['source_reference'] if pd.notna(row['source_reference']) else row['zotero_uri']
     
     return enrichment
 
@@ -125,8 +150,16 @@ if enrichment_data:
         st.success("✅ Enrichment data loaded")
         st.caption(f"📍 {len(enrichment_data['locations'])} location mappings")
         st.caption(f"🏷️ {len(enrichment_data['poolparty'])} poolparty URIs")
+        if enrichment_data['zotero']:
+            st.caption(f"📚 {len(enrichment_data['zotero']) // 2} Zotero citations")  # Divided by 2 because we store both cases
 
-st.title("📜 VOC Historical Person Explorer")
+st.title("Cochin Persondata Viewer")
+
+st.markdown("""This viewer allows you to search data from the to be published GLOBALISE persons dataset. 
+            It contains a small sample of the data, created by asking the question _Who in the dataset had Cochin as their place of residence?_'
+            It is meant for use in the 'Getting to know GLOBALISE: personsdata' workshop on march 3th.""")
+
+st.markdown('This viewer is an experiment and not a part of the official GLOBALISE infrastructure. YMMV.')
 
 if data:
     tab_search, tab_stats, tab_enrichment = st.tabs(["🔍 Search", "📊 Statistics", "🗂️ Enrichment Info"])
@@ -194,10 +227,11 @@ if data:
                                 st.caption("Standardized:")
                                 st.write(enriched_label)
             
-            if st.button("View Full Profile 👤", type="primary"):
+            if st.button("View Profile 👤", type="primary"):
                 st.session_state['selected_person_id'] = selection
                 st.session_state['selected_person_data'] = results[selection]
                 st.session_state['enrichment_data'] = enrichment_data
+                st.session_state['all_data'] = data  # Pass full dataset for relations
                 st.switch_page("pages/Person_Details.py")
         else:
             st.info("No matches found. Try different search terms.")
@@ -292,6 +326,26 @@ if data:
                     st.dataframe(df, use_container_width=True, hide_index=True)
         else:
             st.info("No poolparty enrichment data loaded.")
+        
+        st.subheader("📚 Zotero Citations")
+        if enrichment_data['zotero']:
+            # Get unique citations (we store both cases, so divide by 2)
+            unique_citations = {}
+            for uri, citation in enrichment_data['zotero'].items():
+                if uri.lower() not in unique_citations:
+                    unique_citations[uri.lower()] = {
+                        'URI': uri,
+                        'Citation': citation
+                    }
+            
+            citation_list = list(unique_citations.values())[:50]  # Show first 50
+            df = pd.DataFrame(citation_list)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+            
+            if len(unique_citations) > 50:
+                st.caption(f"Showing 50 of {len(unique_citations)} citations")
+        else:
+            st.info("No Zotero citation data loaded. Add zotero_uris.csv to enable better source citations.")
         
 else:
     st.error("data.json not found! Please ensure data.json is in the same directory as this script.")
