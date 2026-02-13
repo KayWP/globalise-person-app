@@ -58,7 +58,8 @@ if st.button("⬅️ Back to Search"):
     st.switch_page("Search.py")
 
 # --- Tabbed Details View ---
-t1, t2, t3, t4, t5, t6 = st.tabs([
+t0, t1, t2, t3, t4, t5, t6 = st.tabs([
+    "📅 Timeline",
     "💼 Activities", 
     "🌍 Locations", 
     "📅 Events", 
@@ -66,6 +67,234 @@ t1, t2, t3, t4, t5, t6 = st.tabs([
     "🆔 Identities",
     "🔗 References"
 ])
+
+with t0:
+    st.subheader("📅 Chronological Timeline")
+    st.caption("All observations grouped by source and date")
+    
+    # Collect all observations
+    observations = {}
+    
+    # Process activities
+    for activity in person.get('activeAs', []):
+        obs_id = activity.get('observation_id')
+        if obs_id:
+            if obs_id not in observations:
+                observations[obs_id] = {
+                    'observation_id': obs_id,
+                    'dates': set(),
+                    'source': activity.get('observation_source', 'N/A'),
+                    'reconstruction_source': activity.get('reconstruction_source', 'N/A'),
+                    'activities': [],
+                    'appellations': [],
+                    'identities': [],
+                    'locations': [],
+                    'events': []
+                }
+            observations[obs_id]['activities'].append(activity)
+            if activity.get('annotationDate'):
+                observations[obs_id]['dates'].add(activity.get('annotationDate'))
+            if activity.get('startDate'):
+                observations[obs_id]['dates'].add(activity.get('startDate'))
+    
+    # Process appellations
+    for appellation in person.get('appellations', []):
+        obs_id = appellation.get('observation_id')
+        if obs_id:
+            if obs_id not in observations:
+                observations[obs_id] = {
+                    'observation_id': obs_id,
+                    'dates': set(),
+                    'source': appellation.get('observation_source', 'N/A'),
+                    'reconstruction_source': appellation.get('reconstruction_source', 'N/A'),
+                    'activities': [],
+                    'appellations': [],
+                    'identities': [],
+                    'locations': [],
+                    'events': []
+                }
+            observations[obs_id]['appellations'].append(appellation)
+            if appellation.get('annotationDate'):
+                observations[obs_id]['dates'].add(appellation.get('annotationDate'))
+    
+    # Process identities
+    for identity in person.get('identities', []):
+        obs_id = identity.get('observation_id')
+        if obs_id:
+            if obs_id not in observations:
+                observations[obs_id] = {
+                    'observation_id': obs_id,
+                    'dates': set(),
+                    'source': identity.get('observation_source', 'N/A'),
+                    'reconstruction_source': identity.get('reconstruction_source', 'N/A'),
+                    'activities': [],
+                    'appellations': [],
+                    'identities': [],
+                    'locations': [],
+                    'events': []
+                }
+            observations[obs_id]['identities'].append(identity)
+            if identity.get('annotationDate'):
+                observations[obs_id]['dates'].add(identity.get('annotationDate'))
+    
+    # Process location relations
+    for location in person.get('locationRelations', []):
+        obs_id = location.get('observation_id')
+        if obs_id:
+            if obs_id not in observations:
+                observations[obs_id] = {
+                    'observation_id': obs_id,
+                    'dates': set(),
+                    'source': location.get('observation_source', 'N/A'),
+                    'reconstruction_source': location.get('reconstruction_source', 'N/A'),
+                    'activities': [],
+                    'appellations': [],
+                    'identities': [],
+                    'locations': [],
+                    'events': []
+                }
+            observations[obs_id]['locations'].append(location)
+            if location.get('annotationDate'):
+                observations[obs_id]['dates'].add(location.get('annotationDate'))
+    
+    # Process events
+    for event in person.get('events', []):
+        obs_id = event.get('observation_id')
+        if obs_id:
+            if obs_id not in observations:
+                observations[obs_id] = {
+                    'observation_id': obs_id,
+                    'dates': set(),
+                    'source': event.get('observation_source', 'N/A'),
+                    'reconstruction_source': event.get('reconstruction_source', 'N/A'),
+                    'activities': [],
+                    'appellations': [],
+                    'identities': [],
+                    'locations': [],
+                    'events': []
+                }
+            observations[obs_id]['events'].append(event)
+            if event.get('annotationDate'):
+                observations[obs_id]['dates'].add(event.get('annotationDate'))
+            if event.get('startDate'):
+                observations[obs_id]['dates'].add(event.get('startDate'))
+    
+    if not observations:
+        st.info("No observations with observation IDs found.")
+    else:
+        # Convert dates to sortable format and sort observations
+        obs_list = []
+        for obs_id, obs_data in observations.items():
+            # Get the earliest date for sorting
+            dates = obs_data['dates']
+            if dates:
+                # Convert dates to sortable strings (handle various formats)
+                date_strings = sorted([str(d) for d in dates if d])
+                earliest_date = date_strings[0] if date_strings else 'Unknown'
+                obs_data['sort_date'] = earliest_date
+                obs_data['display_dates'] = ', '.join(date_strings)
+            else:
+                obs_data['sort_date'] = 'Unknown'
+                obs_data['display_dates'] = 'No date'
+            obs_list.append(obs_data)
+        
+        # Sort by date (chronologically)
+        obs_list.sort(key=lambda x: x['sort_date'])
+        
+        # Display timeline
+        for i, obs in enumerate(obs_list):
+            # Create a container for each observation
+            with st.container():
+                col1, col2 = st.columns([3, 1])
+                
+                with col1:
+                    st.markdown(f"### 📍 {obs['observation_id']}")
+                    st.markdown(f"**Date(s):** {obs['display_dates']}")
+                
+                with col2:
+                    st.metric("Items", 
+                             len(obs['activities']) + len(obs['appellations']) + 
+                             len(obs['identities']) + len(obs['locations']) + len(obs['events']))
+                
+                # Display source information
+                with st.expander("ℹ️ Source Information", expanded=False):
+                    st.write(f"**Observation Source:** {obs['source']}")
+                    st.write(f"**Reconstruction Source:** {obs['reconstruction_source']}")
+                
+                # Display content by category
+                if obs['appellations']:
+                    st.markdown("**👤 Names in this observation:**")
+                    for app in obs['appellations']:
+                        name = app.get('appellation', 'Unknown')
+                        type_uri = app.get('appellationType', '')
+                        enriched_type = get_enriched_label(type_uri, 'name')
+                        st.write(f"• {name} ({enriched_type})")
+                
+                if obs['activities']:
+                    st.markdown("**💼 Activities/Roles:**")
+                    for act in obs['activities']:
+                        original_label = act.get('original_label', 'N/A')
+                        enriched_label = get_enriched_label(act.get('activity', ''), original_label)
+                        employer = act.get('employer', '')
+                        
+                        display_text = f"• {enriched_label}"
+                        if employer:
+                            display_text += f" (employer: {employer})"
+                        if act.get('startDate') or act.get('endDate'):
+                            dates = []
+                            if act.get('startDate'):
+                                dates.append(f"from {act['startDate']}")
+                            if act.get('endDate'):
+                                dates.append(f"to {act['endDate']}")
+                            display_text += f" [{' '.join(dates)}]"
+                        
+                        st.write(display_text)
+                
+                if obs['identities']:
+                    st.markdown("**🆔 Identities:**")
+                    for identity in obs['identities']:
+                        original_label = identity.get('original_label', 'N/A')
+                        enriched_label = get_enriched_label(identity.get('identity', ''), original_label)
+                        st.write(f"• {enriched_label}")
+                
+                if obs['locations']:
+                    st.markdown("**🌍 Locations:**")
+                    for loc in obs['locations']:
+                        relation_uri = loc.get('locationRelation', '')
+                        enriched_relation = get_enriched_label(relation_uri, loc.get('original_label', 'N/A'))
+                        
+                        location_uri = loc.get('location', '')
+                        original_desc = loc.get('original_location_description', 'Unknown')
+                        enriched_location = get_enriched_label(location_uri, '')
+                        if not enriched_location and original_desc:
+                            enriched_location = get_enriched_label(original_desc.upper(), enrichment_data, original_desc)
+                        
+                        st.write(f"• {enriched_relation}: {enriched_location}")
+                
+                if obs['events']:
+                    st.markdown("**📅 Events:**")
+                    for event in obs['events']:
+                        original_label = event.get('original_label', 'Unknown Event')
+                        enriched_label = get_enriched_label(event.get('event', ''), original_label)
+                        
+                        location_uri = event.get('location', '')
+                        original_location = event.get('original_location_description', '')
+                        enriched_location = get_enriched_label(location_uri, '')
+                        if not enriched_location and original_location:
+                            enriched_location = get_enriched_label(original_location.upper(), enrichment_data, original_location)
+                        
+                        display_text = f"• {enriched_label}"
+                        if enriched_location:
+                            display_text += f" at {enriched_location}"
+                        if event.get('startDate'):
+                            display_text += f" [{event['startDate']}]"
+                        
+                        st.write(display_text)
+                
+                # Add a divider between observations
+                if i < len(obs_list) - 1:
+                    st.divider()
+
 
 with t1:
     st.subheader("Professional Activities")
