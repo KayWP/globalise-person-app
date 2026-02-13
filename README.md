@@ -1,1 +1,0 @@
-# globalise-person-app
