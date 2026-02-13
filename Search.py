@@ -95,6 +95,36 @@ def get_primary_name(person_data):
         return appellations[0].get('appellation', 'Unknown')
     return 'Unknown'
 
+import re
+
+def get_lifespan(person_data):
+    """Extracts a year range from startDate, endDate, and annotationDate across the cluster"""
+    years = []
+    
+    # These are the lists in your JSON that contain date information
+    categories = ['activeAs', 'events', 'locationRelations', 'appellations']
+    
+    for category in categories:
+        items = person_data.get(category, [])
+        for item in items:
+            # Check all possible date fields in each record
+            for date_key in ['startDate', 'endDate', 'annotationDate']:
+                val = item.get(date_key)
+                if val and isinstance(val, str):
+                    # Find 4-digit years (e.g., 1745)
+                    found_years = re.findall(r'\b(1[678]\d{2})\b', val)
+                    years.extend([int(y) for y in found_years])
+
+    if not years:
+        return "Dates unknown"
+    
+    start_yr = min(years)
+    end_yr = max(years)
+    
+    if start_yr == end_yr:
+        return f"Active in {start_yr}"
+    return f"{start_yr} – {end_yr}"
+
 def get_enriched_label(uri, enrichment_data, fallback=''):
     """Get enriched label for a URI"""
     # Check if it's a location URI
@@ -182,57 +212,46 @@ if data:
                 results[k] = v
 
         if results:
-            st.write(f"Found {len(results)} result(s)")
+            st.markdown("### Top Matches")
             
-            # Create display options
+            # Get first 3 items from results
+            top_matches = list(results.items())[:3]
+            
+            cols = st.columns(3)
+            for idx, (p_id, person) in enumerate(top_matches):
+                with cols[idx]:
+                    with st.container(border=True):
+                        st.markdown(f"**{get_primary_name(person)}**")
+                        st.caption(f"📅 Observed: {get_lifespan(person)}")
+                        
+                        # Direct navigation button
+                        if st.button(f"View Profile", key=f"btn_{p_id}", use_container_width=True):
+                            st.session_state['selected_person_id'] = p_id
+                            st.session_state['selected_person_data'] = person
+                            st.session_state['enrichment_data'] = enrichment_data
+                            st.session_state['all_data'] = data
+                            st.switch_page("pages/Person_Details.py")
+
+            st.divider()
+
+            # Secondary Selector (for when the person isn't in the top 3)
+            st.write(f"Total results: {len(results)}")
+            
             display_options = {k: f"{k} - {get_primary_name(v)}" for k, v in results.items()}
             
             selection = st.selectbox(
-                "Select a person:", 
+                "Or select from all results:", 
                 options=list(results.keys()),
                 format_func=lambda x: display_options[x]
             )
             
-            # Show preview with enriched data
             if selection:
-                person = results[selection]
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.metric("Activities", len(person.get('activeAs', [])))
-                with col2:
-                    st.metric("Locations", len(person.get('locationRelations', [])))
-                with col3:
-                    st.metric("Events", len(person.get('events', [])))
-                
-                # Show enriched role preview
-                if person.get('activeAs'):
-                    st.subheader("Sample Activities (Enriched)")
-                    for activity in person.get('activeAs', [])[:3]:
-                        original_label = activity.get('original_label', 'N/A')
-                        enriched_label = get_enriched_label(
-                            activity.get('activity', ''), 
-                            enrichment_data, 
-                            original_label
-                        )
-                        
-                        col_a, col_b = st.columns([1, 2])
-                        with col_a:
-                            st.caption("Original:")
-                            st.write(original_label)
-                        with col_b:
-                            if enriched_label != original_label:
-                                st.caption("Standardized:")
-                                st.write(f"**{enriched_label}**")
-                            else:
-                                st.caption("Standardized:")
-                                st.write(enriched_label)
-            
-            if st.button("View Profile 👤", type="primary"):
-                st.session_state['selected_person_id'] = selection
-                st.session_state['selected_person_data'] = results[selection]
-                st.session_state['enrichment_data'] = enrichment_data
-                st.session_state['all_data'] = data  # Pass full dataset for relations
-                st.switch_page("pages/Person_Details.py")
+                if st.button("Go to Selected Profile 👤", type="primary", use_container_width=True):
+                    st.session_state['selected_person_id'] = selection
+                    st.session_state['selected_person_data'] = results[selection]
+                    st.session_state['enrichment_data'] = enrichment_data
+                    st.session_state['all_data'] = data
+                    st.switch_page("pages/Person_Details.py")
         else:
             st.info("No matches found. Try different search terms.")
 
