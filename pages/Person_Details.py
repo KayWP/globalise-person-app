@@ -201,67 +201,147 @@ with t0:
         # Sort by date (chronologically)
         obs_list.sort(key=lambda x: x['sort_date'])
         
+        # CSS for timeline styling
+        st.markdown("""
+        <style>
+        .timeline-item {
+            margin-left: 20px;
+            border-left: 3px solid #e0e0e0;
+            padding-left: 30px;
+            padding-bottom: 20px;
+            position: relative;
+        }
+        .timeline-marker {
+            position: absolute;
+            left: -9px;
+            top: 5px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #4CAF50;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px #4CAF50;
+        }
+        .timeline-date {
+            font-weight: bold;
+            color: #4CAF50;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        .timeline-summary {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
         # Display timeline
         for i, obs in enumerate(obs_list):
-            # Create a container for each observation
-            with st.container():
-                col1, col2 = st.columns([3, 1])
-                
+            # Timeline marker and date
+            st.markdown(f"""
+            <div class="timeline-item">
+                <div class="timeline-marker"></div>
+                <div class="timeline-date">📅 {obs['display_dates']}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Create summary line
+            summary_parts = []
+            
+            # Get primary name from this observation
+            if obs['appellations']:
+                name = obs['appellations'][0].get('appellation', 'Unknown')
+                summary_parts.append(f"👤 {name}")
+            
+            # Get primary activity
+            if obs['activities']:
+                original_label = obs['activities'][0].get('original_label', '')
+                enriched = get_enriched_label(obs['activities'][0].get('activity', ''), original_label)
+                summary_parts.append(f"💼 {enriched}")
+            
+            # Get primary location
+            if obs['locations']:
+                location_uri = obs['locations'][0].get('location', '')
+                original_desc = obs['locations'][0].get('original_location_description', '')
+                enriched_location = get_enriched_label(location_uri, '')
+                if not enriched_location and original_desc:
+                    enriched_location = get_enriched_label(original_desc.upper(), enrichment_data, original_desc)
+                if enriched_location:
+                    summary_parts.append(f"📍 {enriched_location}")
+            
+            # Get primary event
+            if obs['events']:
+                event_label = obs['events'][0].get('original_label', '')
+                enriched = get_enriched_label(obs['events'][0].get('event', ''), event_label)
+                summary_parts.append(f"⚡ {enriched}")
+            
+            summary = " • ".join(summary_parts) if summary_parts else "No data"
+            
+            # Display compact summary with expander
+            with st.expander(f"**{obs['observation_id']}** — {summary}", expanded=False):
+                # Source information in a compact format
+                col1, col2 = st.columns(2)
                 with col1:
-                    st.markdown(f"### 📍 {obs['observation_id']}")
-                    st.markdown(f"**Date(s):** {obs['display_dates']}")
-                
+                    st.caption("📚 **Source**")
+                    st.caption(obs['source'])
                 with col2:
-                    st.metric("Items", 
-                             len(obs['activities']) + len(obs['appellations']) + 
-                             len(obs['identities']) + len(obs['locations']) + len(obs['events']))
+                    st.caption("🔗 **Reconstruction**")
+                    st.caption(obs['reconstruction_source'])
                 
-                # Display source information
-                with st.expander("ℹ️ Source Information", expanded=False):
-                    st.write(f"**Observation Source:** {obs['source']}")
-                    st.write(f"**Reconstruction Source:** {obs['reconstruction_source']}")
+                st.markdown("---")
                 
-                # Display content by category
+                # Display content by category in a compact format
                 if obs['appellations']:
-                    st.markdown("**👤 Names in this observation:**")
+                    st.markdown("**👤 Names**")
+                    name_list = []
                     for app in obs['appellations']:
                         name = app.get('appellation', 'Unknown')
                         type_uri = app.get('appellationType', '')
-                        enriched_type = get_enriched_label(type_uri, 'name')
-                        st.write(f"• {name} ({enriched_type})")
+                        enriched_type = get_enriched_label(type_uri, '')
+                        if enriched_type:
+                            name_list.append(f"{name} _{({enriched_type})}_")
+                        else:
+                            name_list.append(name)
+                    st.write(" • ".join(name_list))
+                    st.write("")
                 
                 if obs['activities']:
-                    st.markdown("**💼 Activities/Roles:**")
+                    st.markdown("**💼 Activities**")
                     for act in obs['activities']:
                         original_label = act.get('original_label', 'N/A')
                         enriched_label = get_enriched_label(act.get('activity', ''), original_label)
                         employer = act.get('employer', '')
                         
-                        display_text = f"• {enriched_label}"
+                        parts = [f"**{enriched_label}**"]
                         if employer:
-                            display_text += f" (employer: {employer})"
+                            parts.append(f"at _{employer}_")
                         if act.get('startDate') or act.get('endDate'):
-                            dates = []
+                            date_range = []
                             if act.get('startDate'):
-                                dates.append(f"from {act['startDate']}")
+                                date_range.append(act['startDate'])
                             if act.get('endDate'):
-                                dates.append(f"to {act['endDate']}")
-                            display_text += f" [{' '.join(dates)}]"
+                                date_range.append(act['endDate'])
+                            parts.append(f"`{' – '.join(date_range)}`")
                         
-                        st.write(display_text)
+                        st.write(" ".join(parts))
+                    st.write("")
                 
                 if obs['identities']:
-                    st.markdown("**🆔 Identities:**")
+                    st.markdown("**🆔 Identity**")
+                    identity_list = []
                     for identity in obs['identities']:
                         original_label = identity.get('original_label', 'N/A')
                         enriched_label = get_enriched_label(identity.get('identity', ''), original_label)
-                        st.write(f"• {enriched_label}")
+                        identity_list.append(enriched_label)
+                    st.write(" • ".join(identity_list))
+                    st.write("")
                 
                 if obs['locations']:
-                    st.markdown("**🌍 Locations:**")
+                    st.markdown("**🌍 Locations**")
                     for loc in obs['locations']:
                         relation_uri = loc.get('locationRelation', '')
-                        enriched_relation = get_enriched_label(relation_uri, loc.get('original_label', 'N/A'))
+                        enriched_relation = get_enriched_label(relation_uri, loc.get('original_label', ''))
                         
                         location_uri = loc.get('location', '')
                         original_desc = loc.get('original_location_description', 'Unknown')
@@ -269,10 +349,11 @@ with t0:
                         if not enriched_location and original_desc:
                             enriched_location = get_enriched_label(original_desc.upper(), enrichment_data, original_desc)
                         
-                        st.write(f"• {enriched_relation}: {enriched_location}")
+                        st.write(f"_{enriched_relation}_: **{enriched_location}**")
+                    st.write("")
                 
                 if obs['events']:
-                    st.markdown("**📅 Events:**")
+                    st.markdown("**⚡ Events**")
                     for event in obs['events']:
                         original_label = event.get('original_label', 'Unknown Event')
                         enriched_label = get_enriched_label(event.get('event', ''), original_label)
@@ -283,17 +364,14 @@ with t0:
                         if not enriched_location and original_location:
                             enriched_location = get_enriched_label(original_location.upper(), enrichment_data, original_location)
                         
-                        display_text = f"• {enriched_label}"
+                        parts = [f"**{enriched_label}**"]
                         if enriched_location:
-                            display_text += f" at {enriched_location}"
+                            parts.append(f"in _{enriched_location}_")
                         if event.get('startDate'):
-                            display_text += f" [{event['startDate']}]"
+                            parts.append(f"`{event['startDate']}`")
                         
-                        st.write(display_text)
-                
-                # Add a divider between observations
-                if i < len(obs_list) - 1:
-                    st.divider()
+                        st.write(" ".join(parts))
+
 
 
 with t1:
