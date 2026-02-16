@@ -306,8 +306,6 @@ with t0:
             if obs['locations']:
                 location_uri = obs['locations'][0].get('location', '')
                 original_desc = obs['locations'][0].get('original_location_description', '')
-                import inspect
-                print(inspect.signature(get_enriched_label))
                 enriched_location = get_enriched_label(location_uri, '')
                 if not enriched_location and original_desc:
                     enriched_location = get_enriched_label(original_desc.upper(), enrichment_data, original_desc)
