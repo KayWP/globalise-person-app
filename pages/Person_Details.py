@@ -509,7 +509,7 @@ with t2:
             # Get enriched labels
             enriched_location = get_enriched_label(location_uri, '')
             if not enriched_location and original_desc:
-                enriched_location = get_enriched_label(original_desc.upper(), enrichment_data, '')
+                get_enriched_label(original_desc.upper(), original_desc)
             
             enriched_relation = get_enriched_label(relation_uri, loc.get('original_label', 'N/A'))
             
