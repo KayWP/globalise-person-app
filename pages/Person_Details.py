@@ -306,10 +306,14 @@ with t0:
             if obs['locations']:
                 location_uri = obs['locations'][0].get('location', '')
                 original_desc = obs['locations'][0].get('original_location_description', '')
-                enriched_location = get_enriched_label(location_uri, '')
+                try:
+                    enriched_location = get_enriched_label(location_uri, '')
+
+                except TypeError:
+                    enriched_location = original_desc
+                    
                 if enriched_location:
-                    summary_parts.append(f"📍 {enriched_location}")
-            
+                        summary_parts.append(f"📍 {enriched_location}")
             # Get primary event
             if obs['events']:
                 event_label = obs['events'][0].get('original_label', '')
