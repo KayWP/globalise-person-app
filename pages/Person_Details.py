@@ -311,7 +311,7 @@ with t0:
 
                 except TypeError:
                     enriched_location = original_desc
-                    
+
                 if enriched_location:
                         summary_parts.append(f"📍 {enriched_location}")
             # Get primary event
@@ -394,7 +394,7 @@ with t0:
                         original_desc = loc.get('original_location_description', 'Unknown')
                         enriched_location = get_enriched_label(location_uri, '')
                         if not enriched_location and original_desc:
-                            enriched_location = get_enriched_label(original_desc.upper(), enrichment_data, original_desc)
+                            get_enriched_label(original_desc.upper(), original_desc)
                         
                         st.write(f"_{enriched_relation}_: **{enriched_location}**")
                     st.write("")
@@ -410,7 +410,8 @@ with t0:
                         original_location = event.get('original_location_description', '')
                         enriched_location = get_enriched_label(location_uri, '')
                         if not enriched_location and original_location:
-                            enriched_location = get_enriched_label(original_location.upper(), enrichment_data, original_location)
+                            get_enriched_label(original_desc.upper(), original_desc)
+
                         
                         parts = [f"**{enriched_label}**"]
                         if enriched_location:
@@ -569,7 +570,8 @@ with t3:
             enriched_event = get_event_label(event_uri, original_label)
             enriched_location = get_enriched_label(location_uri, '')
             if not enriched_location and original_location:
-                enriched_location = get_enriched_label(original_location.upper(), enrichment_data, original_location)
+                get_enriched_label(original_desc.upper(), original_desc)
+
             
             # Get better source citation
             source = event.get('observation_source', 'N/A')
