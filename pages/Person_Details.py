@@ -308,7 +308,7 @@ with t0:
                 original_desc = obs['locations'][0].get('original_location_description', '')
                 enriched_location = get_enriched_label(location_uri, '')
                 if not enriched_location and original_desc:
-                    enriched_location = get_enriched_label(original_desc.upper(), enrichment_data, original_desc)
+                    enriched_location = get_enriched_label(original_desc.upper(), enrichment_data)
                 if enriched_location:
                     summary_parts.append(f"📍 {enriched_location}")
             
