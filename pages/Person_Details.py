@@ -788,8 +788,8 @@ with t7:
         st.info("No external references recorded.")
     
     # Also show persons in cluster
-    persons = person.get('persons', [])
-    if persons:
-        st.subheader("Person IDs in Cluster")
-        person_df = pd.DataFrame(persons)
-        st.dataframe(person_df, use_container_width=True, hide_index=True)
+    #persons = person.get('persons', [])
+    #if persons:
+    #    st.subheader("Person IDs in Cluster")
+    #    person_df = pd.DataFrame(persons)
+    #    st.dataframe(person_df, use_container_width=True, hide_index=True)
