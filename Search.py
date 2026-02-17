@@ -98,6 +98,28 @@ def get_primary_name(person_data):
 
 import re
 
+def get_category_options(data, enrichment_data, parent_uri_fragment):
+    options = {}
+    for person in data.values():
+        for item in person.get('activeAs', []):
+            uri = item.get('activity', '')
+            if parent_uri_fragment in uri:
+                label = get_enriched_label(uri, enrichment_data, uri)
+                options[uri] = label
+    return options  # {uri: label}
+
+def get_identity_options(data, enrichment_data, identity_type_fragment):
+    """Collect all unique identity values for a given identityType URI fragment"""
+    options = {}
+    for person in data.values():
+        for item in person.get('identities', []):
+            if identity_type_fragment in item.get('identityType', ''):
+                uri = item.get('identity', '')
+                if uri:
+                    label = get_enriched_label(uri, enrichment_data, item.get('original_label', uri))
+                    options[uri] = label
+    return options  # {uri: display_label}
+
 def get_lifespan(person_data):
     """Extracts a year range from startDate, endDate, and annotationDate across the cluster"""
     years = []
@@ -207,6 +229,20 @@ if data:
         with st.expander("🛠️ Advanced Search"):
             adv_loc = st.text_input("Location (e.g. Amsterdam, Cochin)")
             adv_role = st.text_input("Role (e.g. merchant, bookkeeper)")
+            
+            gender_options = get_identity_options(data, enrichment_data, 'bfd9751f')
+            ethnicity_options = get_identity_options(data, enrichment_data, '8350c460')
+            
+            adv_gender = st.selectbox(
+                "Assigned gender",
+                options=[''] + list(gender_options.keys()),
+                format_func=lambda x: 'Any' if x == '' else gender_options.get(x, x)
+            )
+            adv_ethnicity = st.selectbox(
+                "Ethnicity category",
+                options=[''] + list(ethnicity_options.keys()),
+                format_func=lambda x: 'Any' if x == '' else ethnicity_options.get(x, x)
+            )
 
         # Filtering logic
         results = {}
@@ -214,8 +250,16 @@ if data:
             name_match = not query or query.lower() in str(v.get('appellations', '')).lower()
             loc_match = not adv_loc or search_in_field(v.get('locationRelations', []), adv_loc, enrichment_data)
             role_match = not adv_role or search_in_field(v.get('activeAs', []), adv_role, enrichment_data)
-            
-            if name_match and loc_match and role_match:
+            gender_match = not adv_gender or any(
+                item.get('identity') == adv_gender
+                for item in v.get('identities', [])
+            )
+            ethnicity_match = not adv_ethnicity or any(
+                item.get('identity') == adv_ethnicity
+                for item in v.get('identities', [])
+            )
+
+            if name_match and loc_match and role_match and gender_match and ethnicity_match:
                 results[k] = v
 
         if results:
