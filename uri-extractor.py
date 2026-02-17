@@ -54,6 +54,28 @@ def get_dutch_preflabel(graph, uri):
         return ""
 
 
+def get_english_preflabel(graph, uri):
+    """
+    Extract English prefLabel for a URI from SKOS graph
+    Returns empty string if not found
+    """
+    if not graph:
+        return ""
+    
+    try:
+        from rdflib import URIRef
+        uri_ref = URIRef(uri)
+        
+        for label in graph.objects(uri_ref, SKOS.prefLabel):
+            if label.language == 'en':
+                return str(label)
+        
+        return ""
+    except Exception as e:
+        print(f"  Warning: Error getting English prefLabel for {uri}: {e}")
+        return ""
+
+
 def get_definition(graph, uri):
     """
     Extract definition for a URI from SKOS graph
@@ -139,6 +161,9 @@ def enrich_poolparty_uris(input_csv='poolparty_uris.csv',
             # Get Dutch prefLabel
             dutch_label = get_dutch_preflabel(graph, uri)
             
+            # Get English prefLabel
+            english_label = get_english_preflabel(graph, uri)
+            
             # Get definition (preferably English, otherwise Dutch)
             definition = get_definition(graph, uri)
             
@@ -151,6 +176,7 @@ def enrich_poolparty_uris(input_csv='poolparty_uris.csv',
                 'type': uri_type,
                 'uri': uri,
                 'dutch_prefLabel': dutch_label,
+                'english_prefLabel': english_label,
                 'definition': definition
             })
             
@@ -162,7 +188,7 @@ def enrich_poolparty_uris(input_csv='poolparty_uris.csv',
     print(f"\nWriting enriched data to {output_csv}...")
     
     with open(output_csv, 'w', newline='', encoding='utf-8') as f:
-        fieldnames = ['type', 'uri', 'dutch_prefLabel', 'definition']
+        fieldnames = ['type', 'uri', 'dutch_prefLabel', 'english_prefLabel', 'definition']
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         
         writer.writeheader()
@@ -192,6 +218,7 @@ def main():
     print("  - type: URI type (activity, identity, etc.)")
     print("  - uri: Original URI")
     print("  - dutch_prefLabel: Preferred label in Dutch")
+    print("  - english_prefLabel: Preferred label in English")
     print("  - definition: Definition (English preferred, Dutch fallback)")
 
 

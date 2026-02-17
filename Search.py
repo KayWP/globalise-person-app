@@ -57,6 +57,7 @@ def load_enrichment_data():
                 enrichment['poolparty'][row['uri']] = {
                     'type': row['type'],
                     'label': row['dutch_prefLabel'] if pd.notna(row['dutch_prefLabel']) else None,
+                    'english_label': row['english_prefLabel'] if 'english_prefLabel' in row and pd.notna(row['english_prefLabel']) else None,
                     'definition': row['definition'] if pd.notna(row['definition']) else None
                 }
     
@@ -159,6 +160,12 @@ def search_in_field(field_list, search_term, enrichment_data=None):
                     enriched_label = get_enriched_label(uri, enrichment_data, '')
                     if search_lower in enriched_label.lower():
                         return True
+                    # Also search English label for poolparty URIs
+                    pp_data = enrichment_data['poolparty'].get(uri)
+                    if pp_data:
+                        english_label = pp_data.get('english_label') or ''
+                        if search_lower in english_label.lower():
+                            return True
             
             # Search in location description
             if 'original_location_description' in item:
@@ -335,7 +342,8 @@ if data:
                     types[type_name] = []
                 types[type_name].append({
                     'URI': uri,
-                    'Label': data['label'],
+                    'Dutch Label': data['label'],
+                    'English Label': data.get('english_label') or '',
                     'Has Definition': '✓' if data['definition'] else '✗'
                 })
             
